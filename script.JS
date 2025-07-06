@@ -48,23 +48,24 @@ const audioAbortMatch = new Audio('audio/abort_match.wav');
  * @param {number} value - The value to add.
  */
 function add(colour, element, value) {
+    console.log(`Calling add(${colour}, ${element}, ${value})`); // Debug log
     if (colour === "red") {
         if (element === "power_block_auto") {
             power_block_auto_red += value;
-            power_block_red += value;
+            power_block_red += value; // Add to the main total for scoring
         } else if (element === "power_block_drive") {
             power_block_drive_red += value;
-            power_block_red += value;
+            power_block_red += value; // Add to the main total for scoring
         } else if (element === "plasma_block") {
             plasma_block_red += value;
         }
     } else if (colour === "blue") {
         if (element === "power_block_auto") {
             power_block_auto_blue += value;
-            power_block_blue += value;
+            power_block_blue += value; // Add to the main total for scoring
         } else if (element === "power_block_drive") {
             power_block_drive_blue += value;
-            power_block_blue += value;
+            power_block_blue += value; // Add to the main total for scoring
         } else if (element === "plasma_block") {
             plasma_block_blue += value;
         }
@@ -78,6 +79,7 @@ function add(colour, element, value) {
  * @param {string} feature - The feature type ("park" or "key").
  */
 function switchstate(color, feature) {
+    console.log(`Calling switchstate(${color}, ${feature})`); // Debug log
     let crossElementId;
     if (color === "red") {
         if (feature === "park") {
@@ -92,7 +94,6 @@ function switchstate(color, feature) {
             park_blue = !park_blue;
             crossElementId = "park_cross_blue";
         } else if (feature === "key") {
-            // Note: The original prompt had key_red here for blue team, corrected to key_blue
             key_blue = !key_blue;
             crossElementId = "key_cross_blue";
         }
@@ -100,11 +101,11 @@ function switchstate(color, feature) {
 
     const crossElement = document.getElementById(crossElementId);
     if (crossElement) {
-        // park_cross_red visible means park_red = false, so if park_red is true, cross should be hidden.
-        // If park_red is false, cross should be visible. This logic applies to all 'cross' elements.
         const isFeatureActive = (color === "red" && ((feature === "park" && park_red) || (feature === "key" && key_red))) ||
                                (color === "blue" && ((feature === "park" && park_blue) || (feature === "key" && key_blue)));
         crossElement.classList.toggle("hidden", isFeatureActive);
+    } else {
+        console.warn(`Element with ID '${crossElementId}' not found for switchstate.`); // Debug warning
     }
     updateDisplay(); // Update display after switching state
 }
@@ -115,6 +116,7 @@ function switchstate(color, feature) {
  * @param {number} value - The value to multiply by 5 and add as penalty.
  */
 function addpenalty(color, value) {
+    console.log(`Calling addpenalty(${color}, ${value})`); // Debug log
     if (color === "red") {
         penalty_red += 5 * value;
     } else if (color === "blue") {
@@ -152,6 +154,7 @@ function updatescore(color) {
  * @param {number} seconds - The number of seconds to set the timer.
  */
 function SetTime(seconds) {
+    console.log(`Calling SetTime(${seconds})`); // Debug log
     clearInterval(timerInterval); // Clear any existing interval
     timeLeft = seconds;
     updateTimerDisplay(); // Initial display
@@ -164,18 +167,18 @@ function SetTime(seconds) {
             // Play load_mark audio at specific times during drive phase
             if (drivePhaseStarted) {
                 if (timeLeft === 150 || timeLeft === 105 || timeLeft === 45) {
-                    audioLoadMark.play();
+                    audioLoadMark.play().catch(e => console.error("Error playing load_mark audio:", e));
                 } else if (timeLeft === 60) {
-                    audioEndgameStart.play();
+                    audioEndgameStart.play().catch(e => console.error("Error playing endgame_start audio:", e));
                 }
             }
         } else {
             clearInterval(timerInterval);
             console.log("Timer finished!");
             if (autoPhaseStarted) {
-                audioAutoEnd.play();
+                audioAutoEnd.play().catch(e => console.error("Error playing auto_end audio:", e));
             } else if (drivePhaseStarted) {
-                audioMatchEnd.play();
+                audioMatchEnd.play().catch(e => console.error("Error playing match_end audio:", e));
             }
         }
     }, 1000);
@@ -191,6 +194,8 @@ function updateTimerDisplay() {
     const timerElement = document.getElementById("timer_display");
     if (timerElement) {
         timerElement.textContent = formattedTime;
+    } else {
+        console.warn("Element with ID 'timer_display' not found."); // Debug warning
     }
 }
 
@@ -198,16 +203,17 @@ function updateTimerDisplay() {
  * Initiates the Autonomous phase.
  */
 function RunAuto() {
+    console.log("Calling RunAuto()"); // Debug log
     if (!autoPhaseStarted) {
         SetTime(30); // Call SetTime(30) only once
-        audioMatchStart.play(); // Play audio match_start
+        audioMatchStart.play().catch(e => console.error("Error playing match_start audio:", e)); // Play audio match_start
         autoPhaseStarted = true;
         drivePhaseStarted = false; // Ensure drive phase is reset if auto is run again
     }
     const autoIcon = document.getElementById("auto_icon");
     const driveIcon = document.getElementById("drive_icon");
-    if (autoIcon) autoIcon.classList.remove("hidden");
-    if (driveIcon) driveIcon.classList.add("hidden");
+    if (autoIcon) autoIcon.classList.remove("hidden"); else console.warn("Element with ID 'auto_icon' not found.");
+    if (driveIcon) driveIcon.classList.add("hidden"); else console.warn("Element with ID 'drive_icon' not found.");
     updateDisplay();
 }
 
@@ -215,13 +221,14 @@ function RunAuto() {
  * Initiates the Driver Control phase.
  */
 function RunDrive() {
+    console.log("Calling RunDrive()"); // Debug log
     if (!drivePhaseStarted) {
         SetTime(180); // Call SetTime(180) only once
-        audioDriveStart.play(); // Play audio drive_start
+        audioDriveStart.play().catch(e => console.error("Error playing drive_start audio:", e)); // Play audio drive_start
         drivePhaseStarted = true;
         autoPhaseStarted = false; // Ensure auto phase is reset if drive is run again
 
-        // Double the value of power_block_red and power_block_blue
+        // Double the value of power_block_red and power_block_blue (the main scoring accumulators)
         power_block_red *= 2;
         power_block_blue *= 2;
 
@@ -240,9 +247,10 @@ function RunDrive() {
  * Aborts the match, resets variables, and hides icons.
  */
 function abort() {
+    console.log("Calling abort()"); // Debug log
     clearInterval(timerInterval); // Stop the timer
     SetTime(0); // Set timer display to 0:00
-    audioAbortMatch.play(); // Play audio abort_match
+    audioAbortMatch.play().catch(e => console.error("Error playing abort_match audio:", e)); // Play audio abort_match
 
     // Reset all score variables to 0
     power_block_red = 0;
@@ -277,10 +285,15 @@ function abort() {
     if (driveIcon) driveIcon.classList.add("hidden");
 
     // Ensure all cross icons are visible (initial state)
-    document.getElementById("park_cross_red").classList.remove("hidden");
-    document.getElementById("key_cross_red").classList.remove("hidden");
-    document.getElementById("park_cross_blue").classList.remove("hidden");
-    document.getElementById("key_cross_blue").classList.remove("hidden");
+    const parkCrossRed = document.getElementById("park_cross_red");
+    const keyCrossRed = document.getElementById("key_cross_red");
+    const parkCrossBlue = document.getElementById("park_cross_blue");
+    const keyCrossBlue = document.getElementById("key_cross_blue");
+
+    if (parkCrossRed) parkCrossRed.classList.remove("hidden"); else console.warn("Element with ID 'park_cross_red' not found for abort.");
+    if (keyCrossRed) keyCrossRed.classList.remove("hidden"); else console.warn("Element with ID 'key_cross_red' not found for abort.");
+    if (parkCrossBlue) parkCrossBlue.classList.remove("hidden"); else console.warn("Element with ID 'park_cross_blue' not found for abort.");
+    if (keyCrossBlue) keyCrossBlue.classList.remove("hidden"); else console.warn("Element with ID 'key_cross_blue' not found for abort.");
 
     updateDisplay(); // Update display to reflect reset values
 }
@@ -290,6 +303,7 @@ function abort() {
  * @param {number} match - The match number.
  */
 function setmatch(match) {
+    console.log(`Calling setmatch(${match})`); // Debug log
     switch (match) {
         case 1:
             match_id = "Upper Bracket - Round 1 - Match 1";
@@ -347,43 +361,97 @@ function setmatch(match) {
  * Updates all displayed values and states on the HTML page.
  */
 function updateDisplay() {
+    console.log("Calling updateDisplay()"); // Debug log
     // Update score displays
-    document.getElementById("power_block_red_display").textContent = power_block_red;
-    document.getElementById("power_block_auto_red_display").textContent = power_block_auto_red;
-    document.getElementById("power_block_drive_red_display").textContent = power_block_drive_red;
-    document.getElementById("plasma_block_red_display").textContent = plasma_block_red;
-    document.getElementById("penalty_red_display").textContent = penalty_red;
-    document.getElementById("totalscore_red_display").textContent = totalscore_red;
+    // power_block_red and plasma_block_red (and blue counterparts) are visible
+    const powerBlockRedDisplay = document.getElementById("power_block_red_display");
+    if (powerBlockRedDisplay) {
+        powerBlockRedDisplay.textContent = power_block_red;
+    } else {
+        console.warn("Element with ID 'power_block_red_display' not found.");
+    }
 
-    document.getElementById("power_block_blue_display").textContent = power_block_blue;
-    document.getElementById("power_block_auto_blue_display").textContent = power_block_auto_blue;
-    document.getElementById("power_block_drive_blue_display").textContent = power_block_drive_blue;
-    document.getElementById("plasma_block_blue_display").textContent = plasma_block_blue;
-    document.getElementById("penalty_blue_display").textContent = penalty_blue;
-    document.getElementById("totalscore_blue_display").textContent = totalscore_blue;
+    const plasmaBlockRedDisplay = document.getElementById("plasma_block_red_display");
+    if (plasmaBlockRedDisplay) {
+        plasmaBlockRedDisplay.textContent = plasma_block_red;
+    } else {
+        console.warn("Element with ID 'plasma_block_red_display' not found.");
+    }
+
+    const penaltyRedDisplay = document.getElementById("penalty_red_display");
+    if (penaltyRedDisplay) {
+        penaltyRedDisplay.textContent = penalty_red;
+    } else {
+        console.warn("Element with ID 'penalty_red_display' not found.");
+    }
+
+    const totalscoreRedDisplay = document.getElementById("totalscore_red_display");
+    if (totalscoreRedDisplay) {
+        totalscoreRedDisplay.textContent = totalscore_red;
+    } else {
+        console.warn("Element with ID 'totalscore_red_display' not found.");
+    }
+
+
+    const powerBlockBlueDisplay = document.getElementById("power_block_blue_display");
+    if (powerBlockBlueDisplay) {
+        powerBlockBlueDisplay.textContent = power_block_blue;
+    } else {
+        console.warn("Element with ID 'power_block_blue_display' not found.");
+    }
+
+    const plasmaBlockBlueDisplay = document.getElementById("plasma_block_blue_display");
+    if (plasmaBlockBlueDisplay) {
+        plasmaBlockBlueDisplay.textContent = plasma_block_blue;
+    } else {
+        console.warn("Element with ID 'plasma_block_blue_display' not found.");
+    }
+
+    const penaltyBlueDisplay = document.getElementById("penalty_blue_display");
+    if (penaltyBlueDisplay) {
+        penaltyBlueDisplay.textContent = penalty_blue;
+    } else {
+        console.warn("Element with ID 'penalty_blue_display' not found.");
+    }
+
+    const totalscoreBlueDisplay = document.getElementById("totalscore_blue_display");
+    if (totalscoreBlueDisplay) {
+        totalscoreBlueDisplay.textContent = totalscore_blue;
+    } else {
+        console.warn("Element with ID 'totalscore_blue_display' not found.");
+    }
+
+
+    // These specific auto/drive power block displays are NOT visible on chromakey as per user request
+    // document.getElementById("power_block_auto_red_display").textContent = power_block_auto_red;
+    // document.getElementById("power_block_drive_red_display").textContent = power_block_drive_red;
+    // document.getElementById("power_block_auto_blue_display").textContent = power_block_auto_blue;
+    // document.getElementById("power_block_drive_blue_display").textContent = power_block_drive_blue;
+
 
     // Update match ID display
-    document.getElementById("match_id_display").textContent = match_id;
+    const matchIdElement = document.getElementById("match_id_display");
+    if (matchIdElement) {
+        matchIdElement.textContent = match_id;
+    } else {
+        console.warn("Element with ID 'match_id_display' not found.");
+    }
+
 
     // Update visibility of cross icons based on boolean states
-    // 'hidden' class means the element is not visible.
-    // If the state (e.g., park_red) is TRUE, it means the feature is active, so the 'cross' should be hidden.
-    // If the state is FALSE, it means the feature is NOT active, so the 'cross' should be visible.
-    // Ensure these elements exist in your HTML with these IDs.
     const parkCrossRed = document.getElementById("park_cross_red");
     const keyCrossRed = document.getElementById("key_cross_red");
     const parkCrossBlue = document.getElementById("park_cross_blue");
     const keyCrossBlue = document.getElementById("key_cross_blue");
-    const timerDisplay = document.getElementById("timer_display");
     const autoIcon = document.getElementById("auto_icon");
     const driveIcon = document.getElementById("drive_icon");
 
-    if (parkCrossRed) parkCrossRed.classList.toggle("hidden", park_red);
-    if (keyCrossRed) keyCrossRed.classList.toggle("hidden", key_red);
-    if (parkCrossBlue) parkCrossBlue.classList.toggle("hidden", park_blue);
-    if (keyCrossBlue) keyCrossBlue.classList.toggle("hidden", key_blue);
-    if (autoIcon) autoIcon.classList.toggle("hidden", !autoPhaseStarted); // Show if auto phase started
-    if (driveIcon) driveIcon.classList.toggle("hidden", !drivePhaseStarted); // Show if drive phase started
+    if (parkCrossRed) parkCrossRed.classList.toggle("hidden", park_red); else console.warn("Element with ID 'park_cross_red' not found.");
+    if (keyCrossRed) keyCrossRed.classList.toggle("hidden", key_red); else console.warn("Element with ID 'key_cross_red' not found.");
+    if (parkCrossBlue) parkCrossBlue.classList.toggle("hidden", park_blue); else console.warn("Element with ID 'park_cross_blue' not found.");
+    if (keyCrossBlue) keyCrossBlue.classList.toggle("hidden", key_blue); else console.warn("Element with ID 'key_cross_blue' not found.");
+    if (autoIcon) autoIcon.classList.toggle("hidden", !autoPhaseStarted); else console.warn("Element with ID 'auto_icon' not found."); // Show if auto phase started
+    if (driveIcon) driveIcon.classList.toggle("hidden", !drivePhaseStarted); else console.warn("Element with ID 'drive_icon' not found."); // Show if drive phase started
 
     // Always update the score after any change to ensure real-time reflection
     updatescore("red");
@@ -392,6 +460,7 @@ function updateDisplay() {
 
 // Initial display update when the script loads
 document.addEventListener("DOMContentLoaded", () => {
+    console.log("DOM fully loaded and parsed. Initializing display."); // Debug log
     updateDisplay();
     SetTime(0); // Initialize timer to 0:00
 });
